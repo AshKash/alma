@@ -15,10 +15,25 @@
         .hint { font-size: 13px; color: #888; }
         button { margin-top: 24px; padding: 10px 24px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; }
         button:disabled { background: #93b4f5; cursor: not-allowed; }
-        #status { margin-top: 20px; padding: 12px; border-radius: 6px; display: none; }
-        #status.error { display: block; background: #fef2f2; color: #b91c1c; }
-        #status.success { display: block; background: #f0fdf4; color: #166534; }
-        #status.loading { display: block; background: #eff6ff; color: #1e40af; }
+        #log-container {
+            margin-top: 24px;
+            display: none;
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #log-container .log-line { white-space: pre-wrap; }
+        #log-container .log-line.field { color: #94a3b8; }
+        #log-container .log-line.step { color: #38bdf8; }
+        #log-container .log-line.done { color: #4ade80; font-weight: 600; }
+        #log-container .spinner { display: inline-block; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         #screenshot { margin-top: 24px; display: none; }
         #screenshot img { width: 100%; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     </style>
@@ -39,40 +54,86 @@
         <button type="submit">Upload & Fill Form</button>
     </form>
 
-    <div id="status"></div>
+    <div id="log-container"></div>
     <div id="screenshot"></div>
 
     <script>
         const form = document.getElementById('uploadForm');
-        const status = document.getElementById('status');
+        const logContainer = document.getElementById('log-container');
         const screenshot = document.getElementById('screenshot');
+
+        function addLog(message) {
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            if (message.startsWith('  ')) {
+                line.className += ' field';
+            } else if (message.includes('Done!')) {
+                line.className += ' done';
+            } else {
+                line.className += ' step';
+            }
+            line.textContent = message;
+            logContainer.appendChild(line);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
 
-            status.className = 'loading';
-            status.textContent = 'Extracting documents and filling form... (a browser window will open)';
-            status.style.display = 'block';
+            logContainer.innerHTML = '';
+            logContainer.style.display = 'block';
             screenshot.style.display = 'none';
             form.querySelector('button').disabled = true;
 
+            addLog('Starting upload...');
+
             try {
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                const data = await res.json();
 
-                if (!res.ok) throw new Error(data.detail || 'Upload failed');
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Upload failed');
+                }
 
-                status.className = 'success';
-                status.textContent = 'Done! The form has been filled in the browser window.';
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
 
-                if (data.screenshot) {
-                    screenshot.innerHTML = `<h2>Filled Form</h2><img src="data:image/png;base64,${data.screenshot}" alt="Filled form">`;
-                    screenshot.style.display = 'block';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Parse SSE events from buffer
+                    const parts = buffer.split('\n\n');
+                    buffer = parts.pop(); // keep incomplete chunk
+
+                    for (const part of parts) {
+                        if (!part.trim()) continue;
+                        let eventType = 'message';
+                        let data = '';
+                        for (const line of part.split('\n')) {
+                            if (line.startsWith('event: ')) eventType = line.slice(7);
+                            else if (line.startsWith('data: ')) data = line.slice(6);
+                        }
+                        if (!data) continue;
+
+                        const parsed = JSON.parse(data);
+
+                        if (eventType === 'log') {
+                            addLog(parsed.message);
+                        } else if (eventType === 'done') {
+                            if (parsed.screenshot) {
+                                screenshot.innerHTML = `<h2>Filled Form</h2><img src="data:image/png;base64,${parsed.screenshot}" alt="Filled form">`;
+                                screenshot.style.display = 'block';
+                            }
+                        }
+                    }
                 }
             } catch (err) {
-                status.className = 'error';
-                status.textContent = err.message;
+                addLog(`ERROR: ${err.message}`);
             } finally {
                 form.querySelector('button').disabled = false;
             }
