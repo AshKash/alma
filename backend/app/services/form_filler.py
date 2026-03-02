@@ -96,18 +96,19 @@ async def _fill_passport(page: Page, passport: PassportData) -> None:
 async def fill_form(
     passport_data: PassportData, g28_data: G28Data
 ) -> bytes:
-    """Fill the form and return a screenshot as PNG bytes."""
+    """Open a visible browser, fill the form live, and return a screenshot."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=False)
         page = await browser.new_page(viewport={"width": 1280, "height": 900})
         await page.goto(FORM_URL, wait_until="networkidle")
 
         await _fill_g28(page, g28_data)
         await _fill_passport(page, passport_data)
 
-        # Wait a moment for any rendering to settle
-        await asyncio.sleep(0.3)
+        # Let the user see the filled form
+        await asyncio.sleep(0.5)
 
         screenshot = await page.screenshot(full_page=True)
-        await browser.close()
+
+        # Leave browser open for user to inspect — don't close it
         return screenshot

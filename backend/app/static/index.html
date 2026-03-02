@@ -23,13 +23,11 @@
         .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 14px; }
         .data-grid dt { color: #666; }
         .data-grid dd { font-weight: 500; }
-        #screenshot { margin-top: 24px; display: none; }
-        #screenshot img { max-width: 100%; border: 1px solid #ddd; border-radius: 6px; }
     </style>
 </head>
 <body>
     <h1>Alma</h1>
-    <p class="subtitle">Upload passport and G-28 form to auto-fill the immigration form.</p>
+    <p class="subtitle">Upload passport and G-28 form to extract data and auto-fill the immigration form.</p>
 
     <form id="uploadForm">
         <label for="passport">Passport (PDF, JPEG, or PNG)</label>
@@ -40,18 +38,16 @@
         <input type="file" id="g28" name="g28" accept=".pdf,.jpg,.jpeg,.png" required>
         <span class="hint">Upload the Notice of Entry of Appearance form</span>
 
-        <button type="submit">Upload & Extract</button>
+        <button type="submit">Upload & Fill Form</button>
     </form>
 
     <div id="status"></div>
     <div id="results"></div>
-    <div id="screenshot"></div>
 
     <script>
         const form = document.getElementById('uploadForm');
         const status = document.getElementById('status');
         const results = document.getElementById('results');
-        const screenshot = document.getElementById('screenshot');
 
         function renderData(title, data) {
             const filtered = Object.entries(data).filter(([_, v]) => v);
@@ -68,10 +64,9 @@
             const formData = new FormData(form);
 
             status.className = 'loading';
-            status.textContent = 'Uploading and extracting documents... (this takes ~30s)';
+            status.textContent = 'Extracting documents and filling form... (a browser window will open)';
             status.style.display = 'block';
             results.innerHTML = '';
-            screenshot.style.display = 'none';
             form.querySelector('button').disabled = true;
 
             try {
@@ -81,16 +76,11 @@
                 if (!res.ok) throw new Error(data.detail || 'Upload failed');
 
                 status.className = 'success';
-                status.textContent = 'Done! Form has been filled with extracted data.';
+                status.textContent = 'Done! The form has been filled in the browser window.';
 
                 results.innerHTML =
-                    renderData('Passport Data', data.passport_data) +
-                    renderData('G-28 Data', data.g28_data);
-
-                if (data.screenshot) {
-                    screenshot.innerHTML = `<h2>Filled Form Screenshot</h2><img src="data:image/png;base64,${data.screenshot}" alt="Filled form">`;
-                    screenshot.style.display = 'block';
-                }
+                    renderData('Extracted Passport Data', data.passport_data) +
+                    renderData('Extracted G-28 Data', data.g28_data);
             } catch (err) {
                 status.className = 'error';
                 status.textContent = err.message;
