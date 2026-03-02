@@ -34,6 +34,15 @@
         #log-container .log-line.done { color: #4ade80; font-weight: 600; }
         #log-container .spinner { display: inline-block; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .preview { margin-top: 8px; display: none; }
+        .preview img, .preview embed {
+            max-width: 200px;
+            max-height: 160px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        .preview .filename { font-size: 12px; color: #666; margin-top: 4px; }
         #screenshot { margin-top: 24px; display: none; }
         #screenshot img { width: 100%; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     </style>
@@ -46,10 +55,12 @@
         <label for="passport">Passport (PDF, JPEG, or PNG)</label>
         <input type="file" id="passport" name="passport" accept=".pdf,.jpg,.jpeg,.png" required>
         <span class="hint">Upload a scan or photo of the passport bio-data page</span>
+        <div class="preview" id="passport-preview"></div>
 
         <label for="g28">G-28 Form (PDF, JPEG, or PNG)</label>
         <input type="file" id="g28" name="g28" accept=".pdf,.jpg,.jpeg,.png" required>
         <span class="hint">Upload the Notice of Entry of Appearance form</span>
+        <div class="preview" id="g28-preview"></div>
 
         <button type="submit">Upload & Fill Form</button>
     </form>
@@ -61,6 +72,27 @@
         const form = document.getElementById('uploadForm');
         const logContainer = document.getElementById('log-container');
         const screenshot = document.getElementById('screenshot');
+
+        function showPreview(input, previewId) {
+            const preview = document.getElementById(previewId);
+            input.addEventListener('change', () => {
+                preview.innerHTML = '';
+                preview.style.display = 'none';
+                const file = input.files[0];
+                if (!file) return;
+
+                const url = URL.createObjectURL(file);
+                if (file.type === 'application/pdf') {
+                    preview.innerHTML = `<embed src="${url}" type="application/pdf" width="200" height="160"><div class="filename">${file.name}</div>`;
+                } else {
+                    preview.innerHTML = `<img src="${url}" alt="Preview"><div class="filename">${file.name}</div>`;
+                }
+                preview.style.display = 'block';
+            });
+        }
+
+        showPreview(document.getElementById('passport'), 'passport-preview');
+        showPreview(document.getElementById('g28'), 'g28-preview');
 
         function addLog(message) {
             const line = document.createElement('div');
