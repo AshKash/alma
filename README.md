@@ -37,11 +37,11 @@ Test documents are in `samples/`:
 
 | File | Description |
 |------|-------------|
-| `samples/passports/passport-us-female.jpeg` | US passport specimen (female) |
-| `samples/passports/passport-us-male.jpg` | US passport specimen (male) |
-| `samples/passports/passport-utopia-specimen.jpg` | ICAO specimen with MRZ |
-| `samples/g28/g28-sample-filled.pdf` | Filled G-28 form |
-| `samples/g28/g28-blank-uscis.pdf` | Blank G-28 (current edition) |
+| `passport-us-female.jpeg` | US passport specimen (female) |
+| `passport-us-male.jpg` | US passport specimen (male) |
+| `passport-utopia-specimen.jpg` | ICAO specimen with MRZ |
+| `g28-sample-filled.pdf` | Filled G-28 form |
+| `g28-blank-uscis.pdf` | Blank G-28 (current edition) |
 
 ## Architecture
 
