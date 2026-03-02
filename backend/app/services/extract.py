@@ -61,6 +61,8 @@ Extract the following fields from this passport document. Return ONLY a JSON obj
 - date_of_issue (format: YYYY-MM-DD)
 - date_of_expiration (format: YYYY-MM-DD)
 
+IMPORTANT: For passport_number, cross-reference the printed number with the MRZ (machine-readable zone) at the bottom of the passport. The MRZ contains the authoritative passport number. The MRZ passport number appears right after the document type and country code, before the first check digit. Use the MRZ value if the printed number is hard to read.
+
 All date fields must be in YYYY-MM-DD format. If a field cannot be determined, use an empty string.
 Return ONLY valid JSON, no markdown fences or extra text."""
 
