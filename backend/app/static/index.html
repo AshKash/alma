@@ -6,8 +6,9 @@
     <title>Alma — Document Upload</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
+        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
         h1 { margin-bottom: 8px; }
+        h2 { margin-top: 32px; margin-bottom: 12px; font-size: 18px; }
         p.subtitle { color: #666; margin-bottom: 32px; }
         label { display: block; font-weight: 600; margin-bottom: 6px; margin-top: 20px; }
         input[type="file"] { display: block; margin-bottom: 8px; }
@@ -18,7 +19,12 @@
         #status.error { display: block; background: #fef2f2; color: #b91c1c; }
         #status.success { display: block; background: #f0fdf4; color: #166534; }
         #status.loading { display: block; background: #eff6ff; color: #1e40af; }
-        pre { margin-top: 16px; background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; }
+        .data-section { margin-top: 24px; }
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 14px; }
+        .data-grid dt { color: #666; }
+        .data-grid dd { font-weight: 500; }
+        #screenshot { margin-top: 24px; display: none; }
+        #screenshot img { max-width: 100%; border: 1px solid #ddd; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -28,7 +34,7 @@
     <form id="uploadForm">
         <label for="passport">Passport (PDF, JPEG, or PNG)</label>
         <input type="file" id="passport" name="passport" accept=".pdf,.jpg,.jpeg,.png" required>
-        <span class="hint">Upload a scan or photo of the passport</span>
+        <span class="hint">Upload a scan or photo of the passport bio-data page</span>
 
         <label for="g28">G-28 Form (PDF, JPEG, or PNG)</label>
         <input type="file" id="g28" name="g28" accept=".pdf,.jpg,.jpeg,.png" required>
@@ -38,21 +44,34 @@
     </form>
 
     <div id="status"></div>
-    <pre id="result" style="display:none"></pre>
+    <div id="results"></div>
+    <div id="screenshot"></div>
 
     <script>
         const form = document.getElementById('uploadForm');
         const status = document.getElementById('status');
-        const result = document.getElementById('result');
+        const results = document.getElementById('results');
+        const screenshot = document.getElementById('screenshot');
+
+        function renderData(title, data) {
+            const filtered = Object.entries(data).filter(([_, v]) => v);
+            if (!filtered.length) return '';
+            const items = filtered.map(([k, v]) => {
+                const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                return `<dt>${label}</dt><dd>${v}</dd>`;
+            }).join('');
+            return `<div class="data-section"><h2>${title}</h2><dl class="data-grid">${items}</dl></div>`;
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
 
             status.className = 'loading';
-            status.textContent = 'Uploading and extracting...';
+            status.textContent = 'Uploading and extracting documents... (this takes ~30s)';
             status.style.display = 'block';
-            result.style.display = 'none';
+            results.innerHTML = '';
+            screenshot.style.display = 'none';
             form.querySelector('button').disabled = true;
 
             try {
@@ -62,9 +81,16 @@
                 if (!res.ok) throw new Error(data.detail || 'Upload failed');
 
                 status.className = 'success';
-                status.textContent = 'Extraction complete.';
-                result.textContent = JSON.stringify(data.extracted, null, 2);
-                result.style.display = 'block';
+                status.textContent = 'Done! Form has been filled with extracted data.';
+
+                results.innerHTML =
+                    renderData('Passport Data', data.passport_data) +
+                    renderData('G-28 Data', data.g28_data);
+
+                if (data.screenshot) {
+                    screenshot.innerHTML = `<h2>Filled Form Screenshot</h2><img src="data:image/png;base64,${data.screenshot}" alt="Filled form">`;
+                    screenshot.style.display = 'block';
+                }
             } catch (err) {
                 status.className = 'error';
                 status.textContent = err.message;
