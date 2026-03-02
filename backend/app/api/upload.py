@@ -1,3 +1,4 @@
+import base64
 import logging
 
 from fastapi import APIRouter, UploadFile
@@ -33,9 +34,10 @@ async def upload_documents(
     g28_data = await extract_document(g28_bytes, g28.filename, "g28")
 
     logger.info("Filling form in visible browser")
-    await fill_form(passport_data, g28_data)
+    screenshot = await fill_form(passport_data, g28_data)
 
     return {
         "passport_data": passport_data.model_dump(),
         "g28_data": g28_data.model_dump(),
+        "screenshot": base64.b64encode(screenshot).decode("ascii"),
     }

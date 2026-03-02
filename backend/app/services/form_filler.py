@@ -95,8 +95,8 @@ async def _fill_passport(page: Page, passport: PassportData) -> None:
 
 async def fill_form(
     passport_data: PassportData, g28_data: G28Data
-) -> None:
-    """Open a visible browser and fill the form live. Browser stays open."""
+) -> bytes:
+    """Open a visible browser, fill the form live, return a screenshot. Browser stays open."""
     pw = await async_playwright().start()
     browser = await pw.chromium.launch(headless=False)
     page = await browser.new_page(viewport={"width": 1280, "height": 900})
@@ -104,3 +104,6 @@ async def fill_form(
 
     await _fill_g28(page, g28_data)
     await _fill_passport(page, passport_data)
+
+    await asyncio.sleep(0.3)
+    return await page.screenshot(full_page=True)
