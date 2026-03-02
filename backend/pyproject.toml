@@ -1,0 +1,26 @@
+[project]
+name = "alma"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "python-multipart>=0.0.18",
+    "anthropic>=0.52.0",
+    "playwright>=1.50.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.0",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25.0",
+    "ruff>=0.11.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
